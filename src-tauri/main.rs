@@ -5,10 +5,11 @@
 )]
 
 use serde::{Deserialize, Serialize};
-use std::sync::Mutex;
+use std::sync::Arc;
 use tauri::State;
 use uuid::Uuid;
 use chrono::Local;
+use tokio::sync::Mutex;
 
 mod ollama;
 mod elena;
@@ -44,7 +45,7 @@ impl Default for ConversationState {
 
 // App state
 pub struct AppState {
-    conversation: Mutex<ConversationState>,
+    conversation: Arc<Mutex<ConversationState>>,
     ollama_client: OllamaClient,
     elena: ElenaPersonality,
 }
@@ -55,7 +56,7 @@ async fn send_message(
     message: String,
     state: State<'_, AppState>,
 ) -> Result<String, String> {
-    let mut conv = state.conversation.lock().unwrap();
+    let mut conv = state.conversation.lock().await;
 
     // Add user message
     let user_msg = ChatMessage {
@@ -93,25 +94,30 @@ async fn send_message(
 }
 
 #[tauri::command]
-fn get_conversation(state: State<'_, AppState>) -> Vec<ChatMessage> {
-    state.conversation.lock().unwrap().messages.clone()
+async fn get_conversation(state: State<'_, AppState>) -> Result<Vec<ChatMessage>, String> {
+    let conv = state.conversation.lock().await;
+    Ok(conv.messages.clone())
 }
 
 #[tauri::command]
-fn clear_conversation(state: State<'_, AppState>) {
-    let mut conv = state.conversation.lock().unwrap();
+async fn clear_conversation(state: State<'_, AppState>) -> Result<(), String> {
+    let mut conv = state.conversation.lock().await;
     conv.messages.clear();
     conv.user_mood = "neutral".to_string();
+    Ok(())
 }
 
 #[tauri::command]
-fn get_user_mood(state: State<'_, AppState>) -> String {
-    state.conversation.lock().unwrap().user_mood.clone()
+async fn get_user_mood(state: State<'_, AppState>) -> Result<String, String> {
+    let conv = state.conversation.lock().await;
+    Ok(conv.user_mood.clone())
 }
 
 #[tauri::command]
-fn set_user_mood(mood: String, state: State<'_, AppState>) {
-    state.conversation.lock().unwrap().user_mood = mood;
+async fn set_user_mood(mood: String, state: State<'_, AppState>) -> Result<(), String> {
+    let mut conv = state.conversation.lock().await;
+    conv.user_mood = mood;
+    Ok(())
 }
 
 fn main() {
@@ -119,7 +125,7 @@ fn main() {
     let elena = ElenaPersonality::new("Tiziano O.");
 
     let app_state = AppState {
-        conversation: Mutex::new(ConversationState::default()),
+        conversation: Arc::new(Mutex::new(ConversationState::default())),
         ollama_client,
         elena,
     };
