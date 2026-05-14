@@ -11,7 +11,6 @@ use uuid::Uuid;
 use chrono::Local;
 
 mod ollama;
-mod database;
 mod elena;
 
 use ollama::OllamaClient;
@@ -115,8 +114,7 @@ fn set_user_mood(mood: String, state: State<'_, AppState>) {
     state.conversation.lock().unwrap().user_mood = mood;
 }
 
-#[tokio::main]
-async fn main() {
+fn main() {
     let ollama_client = OllamaClient::new("http://localhost:11434".to_string());
     let elena = ElenaPersonality::new("Tiziano O.");
 
