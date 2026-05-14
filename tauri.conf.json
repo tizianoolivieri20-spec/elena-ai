@@ -3,7 +3,7 @@
     "beforeBuildCommand": "npm run build",
     "beforeDevCommand": "npm run dev",
     "devPath": "http://localhost:5173",
-    "frontendDist": "../dist"
+    "distDir": "../dist"
   },
   "package": {
     "productName": "Elena AI",
@@ -50,10 +50,6 @@
         "minHeight": 600,
         "minWidth": 800
       }
-    ],
-    "macOS": {
-      "minimumSystemVersion": "10.13",
-      "useBootstrapper": true
-    }
+    ]
   }
 }
